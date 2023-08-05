@@ -261,6 +261,8 @@ def mainGame(config, genomes):
     playerx = int(SCREENWIDTH/5)
     playery = int(SCREENWIDTH/2)
     basex = 0
+    start_time = pygame.time.get_ticks() #reset the start_time after every time we update our generation
+    
 
     models_list = [] #create an empty list to store all the training neural networks
     genomes_list = [] #create an empty list to store all the training genomes
@@ -315,6 +317,9 @@ def mainGame(config, genomes):
             run = False
             break
 
+        game_time = round((pygame.time.get_ticks() - start_time)/1000, 2) #record the game time for this generation
+        
+
         '''# This function will return true if the player is crashed
         crashTest = isCollide(playerx, playery, upperPipes, lowerPipes)
         if crashTest:
@@ -342,6 +347,48 @@ def mainGame(config, genomes):
         # check for score
         score = len(passed_pipes) #calculate the score of the game, which equals to the number of pipes the bird passed
         
+
+        for index, bird in enumerate(birds_list):
+            # bird.move() # move the bird (if required)
+            delta_x = bird.x - upperPipes[pipe_input_index]['x']  # input 1: the horizontal distance between the bird and the pipe
+
+            # Find the index of the nearest pipe (either upper or lower)
+            nearest_pipe_index = get_index(lowerPipes, upperPipes, [bird])
+
+            # Calculate the vertical distance between the bird and the nearest pipe
+            if nearest_pipe_index is not None:
+                nearest_pipe = lowerPipes[nearest_pipe_index] if nearest_pipe_index < len(lowerPipes) else upperPipes[nearest_pipe_index - len(lowerPipes)]
+                delta_y_top = bird.y - nearest_pipe['y']  # input 2: the vertical distance between the bird and the nearest pipe
+            else:
+                # Set some default value if there are no pipes (e.g., bird is at the start of the game)
+                delta_y_top = 0
+
+            # Calculate the vertical distance between the bird and the next pipe below the nearest one
+            if nearest_pipe_index is not None and nearest_pipe_index + 1 < len(lowerPipes) + len(upperPipes):
+                next_pipe = lowerPipes[nearest_pipe_index + 1] if nearest_pipe_index + 1 < len(lowerPipes) else upperPipes[nearest_pipe_index + 1 - len(lowerPipes)]
+                delta_y_bottom = bird.y - next_pipe['y']  # input 3: the vertical distance between the bird and the next pipe below the nearest one
+            else:
+                # Set some default value if there are no more pipes (e.g., bird is at the end of the game)
+                delta_y_bottom = 0
+
+            net_input = (delta_x, delta_y_top, delta_y_bottom)
+            # input the bird's distance from the pipes to get the output of whether to jump or not
+            output = models_list[index].activate(net_input)
+
+            
+            if output[0] > prob_threshold_to_jump: #if the model output is greater than the probability threshold to jump
+                bird.jump() #then jump the bird
+            
+            bird_failed = True if isCollide(bird.x, bird.y, upperPipes, lowerPipes) is True else False
+            
+            #the fitness function is a combination of game score, alive time, and a punishment for collision
+            genomes_list[index].fitness = game_time + score - bird_failed * failed_punishment
+            
+            if bird_failed:
+                models_list.pop(index) #drop the model from the list if collided
+                genomes_list.pop(index) #drop the genome from the list if collided
+                birds_list.pop(index) #drop the bird from the list if collided
+
         if playerVelY < playerMaxVelY and not playerFlapped:
             playerVelY += playerAccY
 
@@ -495,8 +542,9 @@ if __name__ == "__main__":
 
     GAME_SPRITES['background'] = pygame.image.load(BACKGROUND).convert()
     GAME_SPRITES['player'] = pygame.image.load(PLAYER).convert_alpha()
+    config_file = 'config.txt'
 
     while True:
         welcomeScreen()  # Shows welcome screen to the user until he presses a button
-        mainGame()  # This is the main game function
+        run_NEAT(config_file)  # This is the main game function
 
