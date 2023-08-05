@@ -238,7 +238,7 @@ def get_index(lower_pipes, upper_pipes, birds):
     bird_x = birds[0].x
 
     # calculate the x distance between birds and each lower pipe
-    lower_list_distance = [lower_pipe['x'] + GAME_SPRITES['pipe'][1].get_width() - bird_x for lower_pipe in lower_pipes]
+    lower_list_distance = [lower_pipes['x'] + GAME_SPRITES['pipe'][1].get_width() - bird_x for lower_pipe in lower_pipes]
 
     # calculate the x distance between birds and each upper pipe
     upper_list_distance = [upper_pipe['x'] + GAME_SPRITES['pipe'][0].get_width() - bird_x for upper_pipe in upper_pipes]
@@ -313,7 +313,7 @@ def mainGame(config, genomes):
                     GAME_SOUNDS['wing'].play()'''
         #stop the game when the score exceed the maximum score
         #break the loop and restart when no bird left
-        if score >= max_score or len(birds_list) == 0:
+        if score >= 100 or len(birds_list) == 0:
             run = False
             break
 
@@ -543,6 +543,14 @@ if __name__ == "__main__":
     GAME_SPRITES['background'] = pygame.image.load(BACKGROUND).convert()
     GAME_SPRITES['player'] = pygame.image.load(PLAYER).convert_alpha()
     config_file = 'config.txt'
+    try:
+        with open(config_file, encoding='utf-8') as f:
+            # Your code to read the configuration file and run NEAT
+            # For example:
+            run_NEAT(config_file)  # This is the main game function # Pass the opened file 'f' to your run_NEAT function
+    except UnicodeDecodeError as e:
+        print(f"UnicodeDecodeError: {e}")
+        # Handle the error or debug the issue
 
     while True:
         welcomeScreen()  # Shows welcome screen to the user until he presses a button
