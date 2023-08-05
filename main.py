@@ -81,17 +81,11 @@ def mainGame():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
-            '''if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
+            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
                 if playery > 0:
                     playerVelY = playerFlapAccv
                     playerFlapped = True
-                    GAME_SOUNDS['wing'].play()'''
-            
-        #stop the game when the score exceed the maximum score
-        #break the loop and restart when no bird left
-        if score >= max_score or len(birds_list) == 0:
-            run = False
-            break
+                    GAME_SOUNDS['wing'].play()
 
         # This function will return true if the player is crashed
         crashTest = isCollide(playerx, playery, upperPipes, lowerPipes)
@@ -195,7 +189,7 @@ if __name__ == "__main__":
     # This will be the main point from where our game will start
     pygame.init()  # Initialize all pygame's modules
     FPSCLOCK = pygame.time.Clock()
-    pygame.display.set_caption('Flappy Bird')
+    pygame.display.set_caption('Flappy Bird by CodeWithHarry')
     GAME_SPRITES['numbers'] = (
         pygame.image.load('gallery/sprites/0.png').convert_alpha(),
         pygame.image.load('gallery/sprites/1.png').convert_alpha(),
