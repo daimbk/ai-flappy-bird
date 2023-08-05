@@ -51,14 +51,24 @@ def welcomeScreen():
                 FPSCLOCK.tick(FPS)
 
 #define a function to get the input index of the pipes
-def get_index(pipes, birds):
-    #get the birds' x position
+def get_index(lower_pipes, upper_pipes, birds):
+    # get the bird's x position (assuming all birds have the same x position)
     bird_x = birds[0].x
-    #calculate the x distance between birds and each pipes
-    list_distance = [pipe.x + pipe.IMG_WIDTH - bird_x for pipe in pipes]
-    #get the index of the pipe that has the minimum non negative distance(the closest pipe in front of the bird)
-    index = list_distance.index(min(i for i in list_distance if i >= 0)) 
+
+    # calculate the x distance between birds and each lower pipe
+    lower_list_distance = [lower_pipe['x'] + GAME_SPRITES['pipe'][1].get_width() - bird_x for lower_pipe in lower_pipes]
+
+    # calculate the x distance between birds and each upper pipe
+    upper_list_distance = [upper_pipe['x'] + GAME_SPRITES['pipe'][0].get_width() - bird_x for upper_pipe in upper_pipes]
+
+    # combine the distances from both lists
+    combined_distances = lower_list_distance + upper_list_distance
+
+    # get the index of the pipe that has the minimum non-negative distance (the closest pipe in front of the bird)
+    index = combined_distances.index(min(i for i in combined_distances if i >= 0))
+
     return index
+
 
 def mainGame(config, genomes):
     global generation, SCREEN #use the global variable gen and SCREEN
@@ -112,26 +122,44 @@ def mainGame(config, genomes):
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
-            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
+            '''if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
                 if playery > 0:
                     playerVelY = playerFlapAccv
                     playerFlapped = True
-                    GAME_SOUNDS['wing'].play()
+                    GAME_SOUNDS['wing'].play()'''
+        #stop the game when the score exceed the maximum score
+        #break the loop and restart when no bird left
+        if score >= max_score or len(birds_list) == 0:
+            run = False
+            break
 
-        # This function will return true if the player is crashed
+        '''# This function will return true if the player is crashed
         crashTest = isCollide(playerx, playery, upperPipes, lowerPipes)
         if crashTest:
-            return
+            return'''
+        
+        pipe_input_index = get_index(lowerPipes, upperPipes, birds_list) #get the input index of the pipes list
+        passed_pipes = [] #create an empty list to hold all the passed pipes
+
+        # both lowerPipes and upperPipes lists have the same length
+        for i in range(len(lowerPipes)):
+            lower_pipe = lowerPipes[i]
+            upper_pipe = upperPipes[i]
+
+            # Move the pipes
+            lower_pipe['x'] -= pipeVelX
+            upper_pipe['x'] -= pipeVelX
+
+            # Check if the bird has passed either the lower or the upper pipe
+            if lower_pipe['x'] + GAME_SPRITES['pipe'][1].get_width() < birds_list[0].x:
+                passed_pipes.append(lower_pipe)
+            elif upper_pipe['x'] + GAME_SPRITES['pipe'][0].get_width() < birds_list[0].x:
+                passed_pipes.append(upper_pipe)
+
 
         # check for score
-        playerMidPos = playerx + GAME_SPRITES['player'].get_width()/2
-        for pipe in upperPipes:
-            pipeMidPos = pipe['x'] + GAME_SPRITES['pipe'][0].get_width()/2
-            if pipeMidPos <= playerMidPos < pipeMidPos + 4:
-                score += 1
-                print(f"Your score is {score}")
-                GAME_SOUNDS['point'].play()
-
+        score = len(passed_pipes) #calculate the score of the game, which equals to the number of pipes the bird passed
+        
         if playerVelY < playerMaxVelY and not playerFlapped:
             playerVelY += playerAccY
 
@@ -214,6 +242,40 @@ def getRandomPipe():
         {'x': pipeX, 'y': y2}  # lower Pipe
     ]
     return pipe
+
+#define a function to run NEAT algorithm to play flappy bird
+def run_NEAT(config_file):
+
+    #use NEAT algorithm to build a neural network based on the pre-set configuration
+    #Create a neat.config.Config object from the configuration file
+    config = neat.config.Config(neat.DefaultGenome, 
+                                neat.DefaultReproduction,
+                                neat.DefaultSpeciesSet, 
+                                neat.DefaultStagnation,
+                                config_file)
+    
+    #Create a neat.population.Population object using the Config object created above
+    neat_pop = neat.population.Population(config)
+    
+    #show the summary statistics of the learning progress
+    neat_pop.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    neat_pop.add_reporter(stats)
+    
+    #Call the run method on the Population object, giving it your fitness function and (optionally) the maximum number of generations you want NEAT to run
+    neat_pop.run(mainGame, max_gen)
+    
+    #get the most fit genome genome as our winner with the statistics.best_genome() function
+    winner = stats.best_genome()
+    
+    #visualize the results
+    node_names = {-1:'delta_x', -2: 'delta_y_top', -3:'delta_y_bottom', 0:'Jump or Not'}
+    draw_net(config, winner, True, node_names = node_names)
+    plot_stats(stats, ylog = False, view = True)
+    plot_species(stats, view = True)
+    
+    #show the final statistics
+    print('\nBest genome:\n{!s}'.format(winner))
 
 
 if __name__ == "__main__":
