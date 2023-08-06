@@ -25,13 +25,13 @@ This project implements an Artificial Intelligence (AI) that plays the popular g
 1. Clone the repository to your local machine.
 
 ```bash
-git clone https://github.com/your-username/flappy-bird-ai.git
+git clone https://github.com/daimbk/flappy-bird-ai.git
 ```
 
 2. Install the required libraries using pip.
 
 ```bash
-pip install pygame neat-python
+pip install pygame neat-python graphviz matplotlib
 ```
 
 ### Usage
@@ -44,5 +44,4 @@ python flappy_bird_ai.py
 
 2. Observe the AI as it evolves over generations to improve its performance in the game.
 
-3. To modify the parameters of the NEAT algorithm or the game environment, check the configuration files (`config-feedforward.txt` for NEAT parameters and `flappy_bird_config.py` for game-related settings).
-
+3. To modify the parameters of the NEAT algorithm or the game environment, check the configuration files (`config.txt` for NEAT parameters).

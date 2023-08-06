@@ -3,6 +3,11 @@ import sys  # We will use sys.exit to exit the program
 import pygame
 from pygame.locals import *  # Basic pygame imports
 import neat
+import warnings
+import graphviz
+import matplotlib.pyplot as plt
+import numpy as np
+import os
 
 # Global Variables for the game
 FPS = 32
@@ -16,23 +21,18 @@ PLAYER = 'gallery/sprites/bird.png'
 BACKGROUND = 'gallery/sprites/background.png'
 PIPE = 'gallery/sprites/pipe.png'
 
-#NEAT options
-generation = 0 #note that the first generation of the birds is 0 because index starts from zero. XD
-max_gen = 50 #the maximum number of generation to run
-prob_threshold_to_jump = 0.8 #the probability threshold to activate the bird to jump
-failed_punishment = 10 #the amount of fitness decrease after collision
-
-import warnings
-
-import graphviz
-import matplotlib.pyplot as plt
-import numpy as np
+# NEAT options
+generation = 0  # note that the first generation of the birds is 0 because index starts from zero. XD
+max_gen = 50  # the maximum number of generation to run
+prob_threshold_to_jump = 0.8  # the probability threshold to activate the bird to jump
+failed_punishment = 10  # the amount of fitness decrease after collision
 
 
 def plot_stats(statistics, ylog=False, view=False, filename='avg_fitness.svg'):
     """ Plots the population's average and best fitness. """
     if plt is None:
-        warnings.warn("This display is not available due to a missing optional dependency (matplotlib)")
+        warnings.warn(
+            "This display is not available due to a missing optional dependency (matplotlib)")
         return
 
     generation = range(len(statistics.most_fit_genomes))
@@ -112,7 +112,8 @@ def plot_spikes(spikes, view=False, filename=None, title=None):
 def plot_species(statistics, view=False, filename='speciation.svg'):
     """ Visualizes speciation throughout evolution. """
     if plt is None:
-        warnings.warn("This display is not available due to a missing optional dependency (matplotlib)")
+        warnings.warn(
+            "This display is not available due to a missing optional dependency (matplotlib)")
         return
 
     species_sizes = statistics.get_species_sizes()
@@ -139,7 +140,8 @@ def draw_net(config, genome, view=False, filename=None, node_names=None, show_di
     """ Receives a genome and draws a neural network with arbitrary topology. """
     # Attributes for network nodes.
     if graphviz is None:
-        warnings.warn("This display is not available due to a missing optional dependency (graphviz)")
+        warnings.warn(
+            "This display is not available due to a missing optional dependency (graphviz)")
         return
 
     # If requested, use a copy of the genome which omits all components that won't affect the output.
@@ -168,14 +170,16 @@ def draw_net(config, genome, view=False, filename=None, node_names=None, show_di
     for k in config.genome_config.input_keys:
         inputs.add(k)
         name = node_names.get(k, str(k))
-        input_attrs = {'style': 'filled', 'shape': 'box', 'fillcolor': node_colors.get(k, 'lightgray')}
+        input_attrs = {'style': 'filled', 'shape': 'box',
+                       'fillcolor': node_colors.get(k, 'lightgray')}
         dot.node(name, _attributes=input_attrs)
 
     outputs = set()
     for k in config.genome_config.output_keys:
         outputs.add(k)
         name = node_names.get(k, str(k))
-        node_attrs = {'style': 'filled', 'fillcolor': node_colors.get(k, 'lightblue')}
+        node_attrs = {'style': 'filled',
+                      'fillcolor': node_colors.get(k, 'lightblue')}
 
         dot.node(name, _attributes=node_attrs)
 
@@ -198,11 +202,13 @@ def draw_net(config, genome, view=False, filename=None, node_names=None, show_di
             style = 'solid' if cg.enabled else 'dotted'
             color = 'green' if cg.weight > 0 else 'red'
             width = str(0.1 + abs(cg.weight / 5.0))
-            dot.edge(a, b, _attributes={'style': style, 'color': color, 'penwidth': width})
+            dot.edge(a, b, _attributes={
+                     'style': style, 'color': color, 'penwidth': width})
 
     dot.render(filename, view=view)
 
     return dot
+
 
 def welcomeScreen():
     """
@@ -232,41 +238,46 @@ def welcomeScreen():
                 pygame.display.update()
                 FPSCLOCK.tick(FPS)
 
-#define a function to get the input index of the pipes
+# define a function to get the input index of the pipes
+
+
 def get_index(lower_pipes, upper_pipes, birds):
     # get the bird's x position (assuming all birds have the same x position)
     bird_x = birds[0].x
 
     # calculate the x distance between birds and each lower pipe
-    lower_list_distance = [lower_pipes['x'] + GAME_SPRITES['pipe'][1].get_width() - bird_x for lower_pipe in lower_pipes]
+    lower_list_distance = [lower_pipes['x'] + GAME_SPRITES['pipe']
+                           [1].get_width() - bird_x for lower_pipe in lower_pipes]
 
     # calculate the x distance between birds and each upper pipe
-    upper_list_distance = [upper_pipe['x'] + GAME_SPRITES['pipe'][0].get_width() - bird_x for upper_pipe in upper_pipes]
+    upper_list_distance = [upper_pipe['x'] + GAME_SPRITES['pipe']
+                           [0].get_width() - bird_x for upper_pipe in upper_pipes]
 
     # combine the distances from both lists
     combined_distances = lower_list_distance + upper_list_distance
 
     # get the index of the pipe that has the minimum non-negative distance (the closest pipe in front of the bird)
-    index = combined_distances.index(min(i for i in combined_distances if i >= 0))
+    index = combined_distances.index(
+        min(i for i in combined_distances if i >= 0))
 
     return index
 
 
-def mainGame(config, genomes):
-    global generation, SCREEN #use the global variable gen and SCREEN
+def mainGame(genomes, config):
+    global generation, SCREEN  # use the global variable gen and SCREEN
     screen = SCREEN
-    generation += 1 #update the generation
+    generation += 1  # update the generation
 
     score = 0
     playerx = int(SCREENWIDTH/5)
     playery = int(SCREENWIDTH/2)
     basex = 0
-    start_time = pygame.time.get_ticks() #reset the start_time after every time we update our generation
-    
+    # reset the start_time after every time we update our generation
+    start_time = pygame.time.get_ticks()
 
-    models_list = [] #create an empty list to store all the training neural networks
-    genomes_list = [] #create an empty list to store all the training genomes
-    birds_list = [] #create an empty list to store all the training birds
+    models_list = []  # create an empty list to store all the training neural networks
+    genomes_list = []  # create an empty list to store all the training genomes
+    birds_list = []  # create an empty list to store all the training birds
 
     # Create 2 pipes for blitting on the screen
     newPipe1 = getRandomPipe()
@@ -293,40 +304,33 @@ def mainGame(config, genomes):
     playerFlapAccv = -8  # velocity while flapping
     playerFlapped = False  # It is true only when the bird is flapping
 
-    for genome_id, genome in genomes: #for each genome
-        birds_list.append(playerx, playery) #create a bird and append the bird in the list
-        genome.fitness = 0 #start with fitness of 0
-        genomes_list.append(genome) #append the genome in the list
-        model = neat.nn.FeedForwardNetwork.create(genome, config) #set up the neural network for each genome using the configuration we set
-        models_list.append(model) #append the neural network in the list
-        
+    for genome_id, genome in genomes:  # for each genome
+        # create a bird and append the bird in the list
+        birds_list.append((playerx, playery))
+        genome.fitness = 0  # start with fitness of 0
+        genomes_list.append(genome)  # append the genome in the list
+        # set up the neural network for each genome using the configuration we set
+        model = neat.nn.FeedForwardNetwork.create(genome, config)
+        models_list.append(model)  # append the neural network in the list
 
     while True:
         for event in pygame.event.get():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
-            '''if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
-                if playery > 0:
-                    playerVelY = playerFlapAccv
-                    playerFlapped = True
-                    GAME_SOUNDS['wing'].play()'''
-        #stop the game when the score exceed the maximum score
-        #break the loop and restart when no bird left
+
+        # stop the game when the score exceed the maximum score
+        # break the loop and restart when no bird left
         if score >= 100 or len(birds_list) == 0:
             run = False
             break
 
-        game_time = round((pygame.time.get_ticks() - start_time)/1000, 2) #record the game time for this generation
-        
+        # record the game time for this generation
+        game_time = round((pygame.time.get_ticks() - start_time)/1000, 2)
 
-        '''# This function will return true if the player is crashed
-        crashTest = isCollide(playerx, playery, upperPipes, lowerPipes)
-        if crashTest:
-            return'''
-        
-        pipe_input_index = get_index(lowerPipes, upperPipes, birds_list) #get the input index of the pipes list
-        passed_pipes = [] #create an empty list to hold all the passed pipes
+        # get the input index of the pipes list
+        pipe_input_index = get_index(lowerPipes, upperPipes, birds_list)
+        passed_pipes = []  # create an empty list to hold all the passed pipes
 
         # both lowerPipes and upperPipes lists have the same length
         for i in range(len(lowerPipes)):
@@ -343,30 +347,34 @@ def mainGame(config, genomes):
             elif upper_pipe['x'] + GAME_SPRITES['pipe'][0].get_width() < birds_list[0].x:
                 passed_pipes.append(upper_pipe)
 
-
         # check for score
-        score = len(passed_pipes) #calculate the score of the game, which equals to the number of pipes the bird passed
-        
+        # calculate the score of the game, which equals to the number of pipes the bird passed
+        score = len(passed_pipes)
 
         for index, bird in enumerate(birds_list):
             # bird.move() # move the bird (if required)
-            delta_x = bird.x - upperPipes[pipe_input_index]['x']  # input 1: the horizontal distance between the bird and the pipe
+            # input 1: the horizontal distance between the bird and the pipe
+            delta_x = bird.x - upperPipes[pipe_input_index]['x']
 
             # Find the index of the nearest pipe (either upper or lower)
             nearest_pipe_index = get_index(lowerPipes, upperPipes, [bird])
 
             # Calculate the vertical distance between the bird and the nearest pipe
             if nearest_pipe_index is not None:
-                nearest_pipe = lowerPipes[nearest_pipe_index] if nearest_pipe_index < len(lowerPipes) else upperPipes[nearest_pipe_index - len(lowerPipes)]
-                delta_y_top = bird.y - nearest_pipe['y']  # input 2: the vertical distance between the bird and the nearest pipe
+                nearest_pipe = lowerPipes[nearest_pipe_index] if nearest_pipe_index < len(
+                    lowerPipes) else upperPipes[nearest_pipe_index - len(lowerPipes)]
+                # input 2: the vertical distance between the bird and the nearest pipe
+                delta_y_top = bird.y - nearest_pipe['y']
             else:
                 # Set some default value if there are no pipes (e.g., bird is at the start of the game)
                 delta_y_top = 0
 
             # Calculate the vertical distance between the bird and the next pipe below the nearest one
             if nearest_pipe_index is not None and nearest_pipe_index + 1 < len(lowerPipes) + len(upperPipes):
-                next_pipe = lowerPipes[nearest_pipe_index + 1] if nearest_pipe_index + 1 < len(lowerPipes) else upperPipes[nearest_pipe_index + 1 - len(lowerPipes)]
-                delta_y_bottom = bird.y - next_pipe['y']  # input 3: the vertical distance between the bird and the next pipe below the nearest one
+                next_pipe = lowerPipes[nearest_pipe_index + 1] if nearest_pipe_index + 1 < len(
+                    lowerPipes) else upperPipes[nearest_pipe_index + 1 - len(lowerPipes)]
+                # input 3: the vertical distance between the bird and the next pipe below the nearest one
+                delta_y_bottom = bird.y - next_pipe['y']
             else:
                 # Set some default value if there are no more pipes (e.g., bird is at the end of the game)
                 delta_y_bottom = 0
@@ -375,19 +383,24 @@ def mainGame(config, genomes):
             # input the bird's distance from the pipes to get the output of whether to jump or not
             output = models_list[index].activate(net_input)
 
-            
-            if output[0] > prob_threshold_to_jump: #if the model output is greater than the probability threshold to jump
-                bird.jump() #then jump the bird
-            
-            bird_failed = True if isCollide(bird.x, bird.y, upperPipes, lowerPipes) is True else False
-            
-            #the fitness function is a combination of game score, alive time, and a punishment for collision
-            genomes_list[index].fitness = game_time + score - bird_failed * failed_punishment
-            
+            # if the model output is greater than the probability threshold to jump
+            if output[0] > prob_threshold_to_jump:
+                bird.jump()  # then jump the bird
+
+            bird_failed = True if isCollide(
+                bird.x, bird.y, upperPipes, lowerPipes) is True else False
+
+            # the fitness function is a combination of game score, alive time, and a punishment for collision
+            genomes_list[index].fitness = game_time + \
+                score - bird_failed * failed_punishment
+
             if bird_failed:
-                models_list.pop(index) #drop the model from the list if collided
-                genomes_list.pop(index) #drop the genome from the list if collided
-                birds_list.pop(index) #drop the bird from the list if collided
+                # drop the model from the list if collided
+                models_list.pop(index)
+                # drop the genome from the list if collided
+                genomes_list.pop(index)
+                # drop the bird from the list if collided
+                birds_list.pop(index)
 
         if playerVelY < playerMaxVelY and not playerFlapped:
             playerVelY += playerAccY
@@ -472,38 +485,41 @@ def getRandomPipe():
     ]
     return pipe
 
-#define a function to run NEAT algorithm to play flappy bird
+# define a function to run NEAT algorithm to play flappy bird
+
+
 def run_NEAT(config_file):
 
-    #use NEAT algorithm to build a neural network based on the pre-set configuration
-    #Create a neat.config.Config object from the configuration file
-    config = neat.config.Config(neat.DefaultGenome, 
+    # use NEAT algorithm to build a neural network based on the pre-set configuration
+    # Create a neat.config.Config object from the configuration file
+    config = neat.config.Config(neat.DefaultGenome,
                                 neat.DefaultReproduction,
-                                neat.DefaultSpeciesSet, 
+                                neat.DefaultSpeciesSet,
                                 neat.DefaultStagnation,
                                 config_file)
-    
-    #Create a neat.population.Population object using the Config object created above
+
+    # Create a neat.population.Population object using the Config object created above
     neat_pop = neat.population.Population(config)
-    
-    #show the summary statistics of the learning progress
+
+    # show the summary statistics of the learning progress
     neat_pop.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     neat_pop.add_reporter(stats)
-    
-    #Call the run method on the Population object, giving it your fitness function and (optionally) the maximum number of generations you want NEAT to run
+
+    # Call the run method on the Population object, giving it your fitness function and (optionally) the maximum number of generations you want NEAT to run
     neat_pop.run(mainGame, max_gen)
-    
-    #get the most fit genome genome as our winner with the statistics.best_genome() function
+
+    # get the most fit genome genome as our winner with the statistics.best_genome() function
     winner = stats.best_genome()
-    
-    #visualize the results
-    node_names = {-1:'delta_x', -2: 'delta_y_top', -3:'delta_y_bottom', 0:'Jump or Not'}
-    draw_net(config, winner, True, node_names = node_names)
-    plot_stats(stats, ylog = False, view = True)
-    plot_species(stats, view = True)
-    
-    #show the final statistics
+
+    # visualize the results
+    node_names = {-1: 'delta_x', -2: 'delta_y_top', -
+                  3: 'delta_y_bottom', 0: 'Jump or Not'}
+    draw_net(config, winner, True, node_names=node_names)
+    plot_stats(stats, ylog=False, view=True)
+    plot_species(stats, view=True)
+
+    # show the final statistics
     print('\nBest genome:\n{!s}'.format(winner))
 
 
@@ -542,12 +558,15 @@ if __name__ == "__main__":
 
     GAME_SPRITES['background'] = pygame.image.load(BACKGROUND).convert()
     GAME_SPRITES['player'] = pygame.image.load(PLAYER).convert_alpha()
-    config_file = 'config.txt'
+    local_dir = os.path.dirname(__file__)
+    config_file = os.path.join(local_dir, 'config.txt')
+
     try:
         with open(config_file, encoding='utf-8') as f:
             # Your code to read the configuration file and run NEAT
             # For example:
-            run_NEAT(config_file)  # This is the main game function # Pass the opened file 'f' to your run_NEAT function
+            # This is the main game function # Pass the opened file 'f' to your run_NEAT function
+            run_NEAT(config_file)
     except UnicodeDecodeError as e:
         print(f"UnicodeDecodeError: {e}")
         # Handle the error or debug the issue
@@ -555,4 +574,3 @@ if __name__ == "__main__":
     while True:
         welcomeScreen()  # Shows welcome screen to the user until he presses a button
         run_NEAT(config_file)  # This is the main game function
-

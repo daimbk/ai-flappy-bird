@@ -83,5 +83,3 @@ weight_replace_rate     = 0.1
 
 [DefaultSpeciesSet]
 compatibility_threshold = 3.0
-view raw
-config-feedforward.txt hosted with ❤ by GitHub
